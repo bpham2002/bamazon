@@ -62,7 +62,8 @@ connection.connect(function(e) {
             ]
             connection.query(q2, values, function(err, res) {
                 if (err) throw err
-
+                var total = parseFloat(r[rq.id - 1].price) * parseInt(rq.quantity)
+                console.log('Your total cost: ' + total)
             })
         })
 
