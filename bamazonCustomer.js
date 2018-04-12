@@ -1,20 +1,7 @@
 var mysql = require('mysql');
 var inq = require('inquirer')
 var pmpt = inq.createPromptModule()
-var pass = false
-var stock
-var qs = [{
-        type: 'input',
-        name: 'id',
-        message: 'What item do you want to buy? (Enter the item id)'
-    },
-    {
-        type: 'input',
-        name: 'quantity',
-        message: 'How many units do you want to buy?',
 
-    }
-]
 var connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -28,29 +15,64 @@ connection.connect(function(e) {
     var q1 = `SELECT * FROM products`
     connection.query(q1, function(e, r) {
         if (e) throw e;
-        stock = r
+
         for (var i = 0; i <= r.length; i++) {
             display(r[i])
             console.log('------------------------------------')
         }
+        var inStock = 0
+        var qs = [{
+                type: 'input',
+                name: 'id',
+                message: 'What item do you want to buy? (Enter the item id)',
+                validate: function(input) {
+                    inStock = r[input - 1].stock_quantity
+                    if (inStock > 0) {
+                        console.log(' Available: ' + inStock)
+                        return true
+                    } else {
+                        return 'The item is not available'
+                    }
+
+                }
+            },
+            {
+                type: 'input',
+                name: 'quantity',
+                message: 'How many units do you want to buy?',
+                validate: function(input) {
+                    if (parseInt(input) > parseInt(inStock)) {
+                        return 'Insufficient quantity'
+                    } else {
+                        return true
+                    }
+                }
+            }
+        ]
 
         pmpt(qs).then(function(rq) {
-            console.log(rq)
+            console.log('You order item_id: ' + rq.id + ', Quantity: ' + rq.quantity)
+            var q2 = `UPDATE products SET? WHERE?`
+            var values = [{
+                    stock_quantity: parseInt(r[rq.id - 1].stock_quantity) - parseInt(rq.quantity)
+                },
+                {
+                    item_id: parseInt(rq.id)
+                }
+            ]
+            connection.query(q2, values, function(err, res) {
+                if (err) throw err
+
+            })
         })
 
-
-
     })
-
-
 })
-
 
 function display(row) {
     for (key in row) {
         if (key != 'stock_quantity' && key != 'department_name') {
             console.log(key + ': ' + row[key])
-
         }
     }
 }
